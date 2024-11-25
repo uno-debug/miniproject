@@ -1,5 +1,5 @@
 import streamlit as st
-from app.stegano import encode_image, decode_image
+from stegano import encode_image, decode_image
 import os
 
 # Streamlit user interface
