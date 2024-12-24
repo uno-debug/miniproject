@@ -1,52 +1,32 @@
 import streamlit as st
-from .stegano import encode_image, decode_image
-import os
+from app.stegano import encode_image, decode_image
+from app.utils import validate_file_type
 
-# Set up Streamlit app
-st.title("Covert Data Embedding Tool")
-st.write("Encode and decode secret messages into/from images.")
+def main():
+    st.title("Covert Data Embedding Project")
+    st.sidebar.title("Options")
+    option = st.sidebar.selectbox("Choose an option", ("Encode", "Decode"))
 
-# Sidebar navigation
-option = st.sidebar.radio("Choose an option", ["Encode Message", "Decode Message"])
-
-# Encoding option
-if option == "Encode Message":
-    st.header("Encode a Secret Message")
-    
-    # File uploader for the input image
-    uploaded_file = st.file_uploader("Upload an image to encode", type=["png", "jpg", "jpeg"])
-    
-    if uploaded_file:
-        with open("resources/test_images/input_image.png", "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        st.image("resources/test_images/input_image.png", caption="Uploaded Image", use_column_width=True)
-
-        # Text input for the secret message
-        secret_message = st.text_area("Enter the secret message to encode")
-        
+    if option == "Encode":
+        st.header("Encode Message in an Image")
+        uploaded_file = st.file_uploader("Upload an Image", type=["png", "jpg", "jpeg"])
+        message = st.text_area("Enter the message to encode")
         if st.button("Encode"):
-            if not secret_message:
-                st.error("Please enter a message to encode.")
+            if uploaded_file and message:
+                output_path = encode_image(uploaded_file, message)
+                st.success(f"Message encoded successfully! File saved at: {output_path}")
             else:
-                output_path = "resources/output_files/encoded_image.png"
-                result = encode_image("resources/test_images/input_image.png", output_path, secret_message)
-                st.success(result)
-                st.image(output_path, caption="Encoded Image", use_column_width=True)
-                st.download_button("Download Encoded Image", data=open(output_path, "rb"), file_name="encoded_image.png")
+                st.error("Please upload an image and enter a message.")
 
-# Decoding option
-elif option == "Decode Message":
-    st.header("Decode a Secret Message")
-
-    # File uploader for the encoded image
-    uploaded_file = st.file_uploader("Upload an encoded image", type=["png", "jpg", "jpeg"])
-    
-    if uploaded_file:
-        with open("resources/test_images/encoded_image.png", "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        st.image("resources/test_images/encoded_image.png", caption="Uploaded Encoded Image", use_column_width=True)
-
+    elif option == "Decode":
+        st.header("Decode Message from an Image")
+        uploaded_file = st.file_uploader("Upload an Image with an Encoded Message", type=["png", "jpg", "jpeg"])
         if st.button("Decode"):
-            result = decode_image("resources/test_images/encoded_image.png")
-            st.success("Decoded Message:")
-            st.write(result)
+            if uploaded_file:
+                message = decode_image(uploaded_file)
+                st.success(f"Decoded Message: {message}")
+            else:
+                st.error("Please upload an image.")
+
+if __name__ == "__main__":
+    main()

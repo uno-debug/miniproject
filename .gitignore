@@ -1,16 +1,4 @@
-# Ignore virtual environment
-envi/
 myenvi/
-
-# Ignore Python bytecode files
+resources/output_files/
 *.pyc
-*.pyo
 __pycache__/
-
-# Ignore system files (Mac, Windows)
-.DS_Store
-Thumbs.db
-
-# Ignore IDE configurations
-.vscode/
-.idea/
