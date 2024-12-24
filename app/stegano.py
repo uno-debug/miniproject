@@ -1,41 +1,62 @@
 from PIL import Image
-import io
+import numpy as np
 
-# Encode message into image
-def encode_image(image_file, message):
-    image = Image.open(image_file)
-    encoded_image = image.copy()
+def encode_image(input_image_path, output_image_path, secret_message):
+    """
+    Encodes a secret message into an image using LSB steganography.
+    """
+    try:
+        # Open the input image
+        img = Image.open(input_image_path)
+        img_array = np.array(img)
 
-    pixels = encoded_image.load()
-    binary_message = ''.join(format(ord(i), '08b') for i in message)
-    data_index = 0
+        # Convert the secret message into binary
+        binary_message = ''.join(format(ord(char), '08b') for char in secret_message)
+        binary_message += '1111111111111110'  # Delimiter to mark the end of the message
 
-    for row in range(encoded_image.size[0]):
-        for col in range(encoded_image.size[1]):
-            pixel = list(pixels[row, col])
-            for color in range(3):  # RGB values
-                if data_index < len(binary_message):
-                    pixel[color] = (pixel[color] & ~1) | int(binary_message[data_index])
-                    data_index += 1
-            pixels[row, col] = tuple(pixel)
-    
-    # Save the encoded image
-    encoded_image_file = "encoded_image.png"
-    encoded_image.save(encoded_image_file)
-    return encoded_image_file
+        # Check if the message can fit in the image
+        total_pixels = img_array.size
+        if len(binary_message) > total_pixels:
+            raise ValueError("Message is too large to fit in the image!")
 
-# Decode message from image
-def decode_image(image_file):
-    image = Image.open(image_file)
-    pixels = image.load()
-    binary_message = ''
-    
-    for row in range(image.size[0]):
-        for col in range(image.size[1]):
-            pixel = list(pixels[row, col])
-            for color in range(3):  # RGB values
-                binary_message += str(pixel[color] & 1)
-    
-    # Convert binary to string
-    message = ''.join(chr(int(binary_message[i:i+8], 2)) for i in range(0, len(binary_message), 8))
-    return message.strip('\x00')  # Strip padding (if any)
+        # Flatten the image array to manipulate pixel values
+        flat_array = img_array.flatten()
+
+        # Modify the LSB of each pixel to encode the message
+        for i in range(len(binary_message)):
+            flat_array[i] = (flat_array[i] & ~1) | int(binary_message[i])
+
+        # Reshape the modified array back to the original shape and save it
+        encoded_array = flat_array.reshape(img_array.shape)
+        encoded_image = Image.fromarray(encoded_array.astype('uint8'))
+        encoded_image.save(output_image_path)
+
+        return "Message successfully encoded into the image!"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def decode_image(encoded_image_path):
+    """
+    Decodes and extracts the secret message from an image.
+    """
+    try:
+        # Open the encoded image
+        img = Image.open(encoded_image_path)
+        img_array = np.array(img).flatten()
+
+        # Extract the LSBs to reconstruct the binary message
+        binary_message = ''.join(str(pixel & 1) for pixel in img_array)
+
+        # Split the binary message into chunks of 8 bits and convert to characters
+        chars = [binary_message[i:i+8] for i in range(0, len(binary_message), 8)]
+        secret_message = ''.join(chr(int(char, 2)) for char in chars)
+
+        # Stop decoding when the delimiter is reached
+        delimiter_index = secret_message.find(chr(255) + chr(255))
+        if delimiter_index != -1:
+            secret_message = secret_message[:delimiter_index]
+
+        return secret_message
+    except Exception as e:
+        return f"Error: {e}"
