@@ -1,6 +1,6 @@
 import streamlit as st
-from app.stegano import encode_image, decode_image
-from app.utils import validate_file_type
+from stegano import encode_image, decode_image
+from utils import validate_file_type
 
 def main():
     st.title("Covert Data Embedding Project")
@@ -19,14 +19,18 @@ def main():
                 st.error("Please upload an image and enter a message.")
 
     elif option == "Decode":
-        st.header("Decode Message from an Image")
-        uploaded_file = st.file_uploader("Upload an Image with an Encoded Message", type=["png", "jpg", "jpeg"])
+        st.subheader("Decode a Message")
+        uploaded_file = st.file_uploader("Upload an Image to Decode", type=["png", "jpg", "jpeg"])
         if st.button("Decode"):
-            if uploaded_file:
-                message = decode_image(uploaded_file)
-                st.success(f"Decoded Message: {message}")
-            else:
-                st.error("Please upload an image.")
+            try:
+                if uploaded_file:
+                    hidden_message = decode_image(uploaded_file)
+                    st.success("Message Decoded Successfully!")
+                    st.text(f"Hidden Message: {hidden_message}")
+                else:
+                    st.error("Please upload an image to decode.")
+            except ValueError as e:
+                st.error(str(e))
 
 if __name__ == "__main__":
     main()
